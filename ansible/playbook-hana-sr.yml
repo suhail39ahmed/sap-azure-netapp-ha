@@ -1,0 +1,22 @@
+---
+# Ansible: configure SAP HANA system replication (simplified)
+- name: Configure HANA system replication
+  hosts: secondary
+  become: true
+  vars:
+    primary_host: "hana-primary.internal"
+    primary_instance: "00"
+    replication_mode: "sync"
+  tasks:
+    - name: Register primary for SR
+      command: >
+        su - {{ hana_sid | lower }}adm -c
+        "hdbnsutil -sr_register --remoteHost={{ primary_host }}
+         --remoteInstance={{ primary_instance }} --replicationMode={{ replication_mode }}
+         --name=secondary"
+      when: sr_not_registered | default(true) | bool
+      changed_when: true
+
+    - name: Start HANA secondary
+      command: su - {{ hana_sid | lower }}adm -c "HDB start"
+      changed_when: true
